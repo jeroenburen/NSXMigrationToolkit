@@ -39,9 +39,12 @@
              script (logging, certificates, credentials, REST calls,
              pagination, dependency sorting, CSV selection, sanitization
              helpers) and Get-NSXTagsInUse (previously Get-NSXTagsInUse.ps1).
+      1.0.1  Fix: with -WhatIf the log file was not written (Add-Content and
+             New-Item honour the caller's $WhatIfPreference); both now run
+             with -WhatIf:$false -Confirm:$false.
 #>
 
-$NSXCommonVersion = '1.0.0'
+$NSXCommonVersion = '1.0.1'
 
 # ═════════════════════════════════════════════════════════════
 # CONSTANTS
@@ -93,7 +96,10 @@ function Write-Log {
 
     if (($target -eq 'File' -or $target -eq 'Both') -and $file) {
         try {
-            Add-Content -Path $file -Value $line -Encoding UTF8
+            # -WhatIf:$false / -Confirm:$false: the log is written even when the
+            # calling script runs with -WhatIf or -Confirm (Add-Content honours
+            # the caller's $WhatIfPreference and would silently skip the line).
+            Add-Content -Path $file -Value $line -Encoding UTF8 -WhatIf:$false -Confirm:$false
         }
         catch {
             # Fall back to screen if file write fails
@@ -120,7 +126,7 @@ function Initialize-NSXLog {
     }
     if ($file) {
         $dir = Split-Path -Parent $file
-        if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force -WhatIf:$false -Confirm:$false | Out-Null }
     }
 }
 
